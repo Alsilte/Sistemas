@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to servidores</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 0;
+        }
+
+        h1 {
+            color: #1b1b1b;
+        }
+
+        h2 {
+            color: #666;
+        }
+
+        ol {
+            list-style-type: decimal;
+            margin-left: 20px;
+        }
+
+        ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+
+        pre {
+            background-color: #e7e7e7;
+            padding: 2px 4px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        code {
+            background-color: #b4b4b4;
+            padding: 2px 4px;
+            border-radius: 4px;
+
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Configuración de Servidores en Red</h1>
+    <h2>Servidor 1: Web Server con Apache y FTP Server</h2>
+    <ol>
+        <li>Instalación de Ubuntu Server LTS en VirtualBox</li>
+        <li>Configuración de Ubuntu Server
+            <ul>
+                <li><code>sudo nano /etc/netplan/[nombre del fichero]</code></li>
+                <p>Configuramos el netplan con la IP proporcionada para el Servidor1 </p>
+                <li><code>sudo netplan apply</code></li>
+
+            </ul>
+        </li>
+        <li>Instalación de Apache
+            <ul>
+                <li><code>sudo apt install apache2</code></li>
+            </ul>
+        </li>
+        <li>Configuración de VirtualHosts en Apache
+            <ul>
+                <li><code>sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/www.conf</code>
+                </li>
+                <p>ServerAlias www.alejandro.test</p>
+                <li><code>sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/docs.conf</code>
+                </li>
+                <p>ServerAlias docs.alejandro.test</p>
+                <li>Habilitar el nuevo VirtualHost usando la utilidad a2ensite y reinicie Apache2:</li>
+                <p><code>sudo a2ensite mynewsite</code> <br>
+                    <code>sudo systemctl restart apache2.service</code>
+                </p>
+            </ul>
+        </li>
+        <li>Instalación y configuración de vsftpd (FTP Server)
+            <ul>
+                <li><code>sudo apt install vsftpd</code></li>
+                <li><code>sudo nano /etc/vsftpd.conf</code></li>
+                <li>Crear usuario webcontent</li>
+                <li>Configuración acceso unicamente al directorio /web (Enjaular)</li>
+            </ul>
+        </li>
+        <li>Deshabilitar UFW para permitir el tráfico de red necesario para acceder a las páginas web a través del
+            servidor DNS.</li>
+        <ul>
+            <li><code>sudo ufw disable </code></li>
+        </ul>
+    </ol>
+
+    <h2>Servidor 2: DNS con Bind9</h2>
+    <ol>
+        <li>Instalación de Ubuntu Server LTS en VirtualBox </li>
+        <li>Configuración de Ubuntu Server</li>
+        <ul>
+            <li><code>sudo nano /etc/netplan/[nombre del fichero]</code></li>
+            <p>Configuramos el netplan con la IP proporcionada para el Servidor2 </p>
+            <li><code>sudo netplan apply</code></li>
+
+        </ul>
+        <li>Instalación de Bind9 (DNS Server)</li>
+        <ul>
+            <li><code>sudo apt install bind9</code></li>
+        </ul>
+        <li>Configuración de zonas y registros en Bind9
+            <ul>
+                <li><code>sudo nano /etc/bind/named.conf.local</code></li>
+                <pre>zone "alejandro.test" {
+                    type master;
+                    file "/etc/bind/db.alejandro.test";
+                };</pre>
+                <li><code>sudo cp /etc/bind/db.local /etc/bind/db.alejandro.test</code></li>
+                <pre>
+;
+; BIND data file for alejandro.test
+;
+$TTL    604800
+@       IN      SOA     alejandro.test. root.alejandro.test. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+@       IN      NS      ns.alejandro.test.
+@       IN      A       192.168.5.85
+@       IN      AAAA    ::1
+ns      IN      A       192.168.5.85
+www     IN      A       192.168.5.85
+docs    IN      A       192.168.5.85
+                </pre>
+                <li><code>sudo systemctl restart bind9.service</code></li>
+
+            </ul>
+        </li>
+    </ol>
+
+    <h2>Máquina Cliente</h2>
+    <ul>
+        <li>Configuración solo Servidor1:</li>
+        <ul>
+            <li><code>sudo nano /etc/hosts</code></li>
+            <p>Configuramos el fichero con la IP del Servidor1 y al lado el alias de cada página</p>
+        </ul>
+        <li>Configuración DNS</li>
+        <ul>
+            <li><code>sudo nano /etc/resolve.conf</code></li>
+            <p>la IP del namserver debe apuntar a la IP del DNS</p>
+        </ul>
+        <li>Comprobar que el DNS funciona: </li>
+        <ul>
+            <p><code>resolvectl status</code></p>
+            <p><code>dig -x 192.168.5.85</code></p>
+            <p><code>ping alejandro.test</code></p>
+        </ul>
+
+    </ul>
+</body>
+
+</html>
